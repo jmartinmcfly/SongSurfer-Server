@@ -9,12 +9,13 @@ load_dotenv()
 app = Flask(__name__)
 print("Running on http:/$/localhost:5000")
 print("CORS ORIGINS: " + os.getenv("CORS_ORIGINS"))
-CORS(app, origins='*')
+CORS(app, origins="*")
 
 # TODO: play with this
 MAX_TOKENS = 3500
 
-#TODO: Test this
+
+# TODO: Test this
 @app.route("/openai-python/trim-tokens", methods=["POST"])
 def trim_tokens():
     """
@@ -99,50 +100,56 @@ def trim_tokens():
 
     request_body = request.json
     response = None
-    
+
     if (not request_body) or ("messages" not in request.json):
         response = make_response(jsonify({"message": "Invalid request body"}), 400)
     else:
         messageObjects = request_body["messages"]
-        print('messageObjects:')
+        print("messageObjects:")
         for obj in messageObjects:
             print(obj)
-            print('\n\n\n')
+            print("\n\n\n")
         messagesContent = []
-        print('here')
+        print("here")
         # create an array of just the message contents
         for message in messageObjects:
             messagesContent.append(message["content"])
         try:
             # count tokens
             totalTokens = num_tokens_from_messages(messagesContent)
-            print('messageObjects:')
+            print("messageObjects:")
             for obj in messageObjects:
                 print(obj)
-                print('\n\n\n')
+                print("\n\n\n")
 
             # trim tokens iteratively until we're under the limit
             while totalTokens > MAX_TOKENS:
                 # keep the prompt message, trim the oldest session message (user or assitant)
                 messageObjects = messageObjects[:1] + messageObjects[2:]
                 messagesContent = messagesContent[:1] + messagesContent[2:]
-                print('messageObjects:')
+                print("messageObjects:")
                 for obj in messageObjects:
-                  print(obj)
-                  print('\n\n\n')
+                    print(obj)
+                    print("\n\n\n")
                 totalTokens = num_tokens_from_messages(messagesContent)
 
             response = make_response(jsonify({"trimmedMessages": messageObjects}), 200)
-            response.headers.add('Access-Control-Allow-Origin', '*')
+            response.headers.add("Access-Control-Allow-Origin", "*")
 
             return response
         except Exception as e:
-            print('EXCEPTION!')
+            print("EXCEPTION!")
             print(e)
-            response = make_response(jsonify({"message": "Server error: " + str(e)}), 500)
-            response.headers.add('Access-Control-Allow-Origin', '*')
+            response = make_response(
+                jsonify({"message": "Server error: " + str(e)}), 500
+            )
+            response.headers.add("Access-Control-Allow-Origin", "*")
             return response
-    
+
+
+@app.route("/<path:path>")
+def catch_all(path):
+    return "You reached %s" % path
 
 
 def num_tokens_from_messages(messages, model="gpt-3.5-turbo-0301"):
@@ -152,7 +159,7 @@ def num_tokens_from_messages(messages, model="gpt-3.5-turbo-0301"):
         total_length += len(message)
 
     print("total length: " + str(total_length))
-    
+
     try:
         encoding = tiktoken.encoding_for_model(model)
     except KeyError:
